@@ -1,0 +1,18 @@
+{
+  "name": "software-testing-teaching-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:gateway": "node backend/gateway/server.js",
+    "start:auth": "node backend/services/auth/server.js",
+    "start:learning": "node backend/services/learning/server.js",
+    "start:assessment": "node backend/services/assessment/server.js",
+    "start:admin": "node backend/services/admin/server.js",
+    "start:all": "node backend/dev-runner.js",
+    "check": "node --check backend/dev-runner.js && node --check backend/gateway/server.js && node --check backend/services/auth/server.js && node --check backend/services/learning/server.js && node --check backend/services/assessment/server.js && node --check backend/services/admin/server.js && node --check frontend/app.js"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  }
+}

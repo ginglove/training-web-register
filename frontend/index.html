@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Testing Studio Classroom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar glass-panel">
+        <div>
+          <p class="eyebrow">Software Testing Teaching Platform</p>
+          <h1>Testing Studio Classroom</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="chip">Teacher View</button>
+          <button class="chip chip-strong">Live Labs</button>
+        </div>
+      </header>
+
+      <main class="dashboard-grid">
+        <section class="hero flat-panel">
+          <div class="hero-copy">
+            <span class="hero-badge">Flat Design x Glassmorphism</span>
+            <h2>Teach software testing with guided labs, traceable coursework, and student progress visibility.</h2>
+            <p>
+              This starter system is designed for lecturers and students: course delivery, practical labs,
+              announcements, submissions, and a simple admin overview for monitoring the class.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-btn">Launch Classroom</button>
+              <button class="secondary-btn">View Architecture</button>
+            </div>
+          </div>
+          <div class="hero-stats glass-panel">
+            <div>
+              <span class="stat-label">Active students</span>
+              <strong id="stat-students">--</strong>
+            </div>
+            <div>
+              <span class="stat-label">Open labs</span>
+              <strong id="stat-labs">--</strong>
+            </div>
+            <div>
+              <span class="stat-label">Avg. completion</span>
+              <strong id="stat-completion">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="glass-panel card-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Instructor</p>
+              <h3>Teaching Profile</h3>
+            </div>
+          </div>
+          <div id="profile-card" class="profile-card skeleton"></div>
+        </section>
+
+        <section class="glass-panel card-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Courses</p>
+              <h3>Current Learning Tracks</h3>
+            </div>
+          </div>
+          <div id="course-list" class="stack-list"></div>
+        </section>
+
+        <section class="flat-panel card-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Practice</p>
+              <h3>Assessment Labs</h3>
+            </div>
+          </div>
+          <div id="lab-list" class="stack-list"></div>
+        </section>
+
+        <section class="glass-panel card-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Communication</p>
+              <h3>Announcements</h3>
+            </div>
+          </div>
+          <div id="announcement-list" class="stack-list"></div>
+        </section>
+
+        <section class="flat-panel card-panel wide-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Review Flow</p>
+              <h3>Student Submissions</h3>
+            </div>
+            <button id="demo-submit" class="chip chip-strong">Create demo submission</button>
+          </div>
+          <div id="submission-list" class="table-grid"></div>
+        </section>
+
+        <section class="glass-panel card-panel wide-panel">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Admin</p>
+              <h3>Roadmap and Risks</h3>
+            </div>
+          </div>
+          <div class="two-column">
+            <div id="roadmap-list" class="stack-list"></div>
+            <div id="risk-list" class="stack-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
