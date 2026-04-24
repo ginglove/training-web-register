@@ -14,13 +14,21 @@ interface Session {
   endDate: string
 }
 
+interface PersonalStats {
+  totalSessions: number
+  completedExams: number
+  pendingExams: number
+  avgScore: number
+}
+
 export default function MemberDashboard() {
   const router = useRouter()
   const [sessions, setSessions] = useState<Session[]>([])
+  const [stats, setStats] = useState<PersonalStats | null>(null)
   const [loading, setLoading] = useState(true)
   
   // Filter states
-  const [statusFilter, setStatusFilter] = useState('ACTIVE') // ACTIVE maps to Publish
+  const [statusFilter, setStatusFilter] = useState('ACTIVE')
   const [search, setSearch] = useState('')
   const [startDateFrom, setStartDateFrom] = useState('')
   const [startDateTo, setStartDateTo] = useState('')
@@ -48,6 +56,8 @@ export default function MemberDashboard() {
     }
 
     setLoading(true)
+    
+    // Fetch Sessions
     fetch('/api/sessions', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -62,27 +72,26 @@ export default function MemberDashboard() {
       .then(data => {
         if (data && Array.isArray(data)) {
           setSessions(data)
-        } else {
-          setSessions([])
         }
-        setLoading(false)
       })
-      .catch(err => {
-        console.error('Dashboard fetch error:', err)
-        setLoading(false)
-        // Optionally set an error state here to show a message to the user
-      })
+      .catch(err => console.error(err))
+
+    // Fetch Personal Stats
+    fetch('/api/reports/my-stats', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setStats(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   }, [router])
 
-  // Process data (Filter -> Search -> Sort -> Paginate) per 4.2.5
+  // Process data
   let processed = sessions.filter(s => s.status === statusFilter)
   
   if (search) {
     processed = processed.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
-  }
-  
-  if (startDateFrom && startDateTo && new Date(startDateFrom) > new Date(startDateTo)) {
-    // We can't easily return a Message here without state, so let's use an effect or local check
   }
   
   if (startDateFrom) processed = processed.filter(s => new Date(s.startDate) >= new Date(startDateFrom))
@@ -90,7 +99,6 @@ export default function MemberDashboard() {
   if (endDateFrom) processed = processed.filter(s => new Date(s.endDate) >= new Date(endDateFrom))
   if (endDateTo) processed = processed.filter(s => new Date(s.endDate) <= new Date(endDateTo))
   
-  // Default Sort: Ngày bắt đầu giảm dần (4.2.5 Default)
   processed.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
 
   const totalPages = Math.ceil(processed.length / PAGE_SIZE) || 1
@@ -102,34 +110,42 @@ export default function MemberDashboard() {
     <>
       <div style={{ marginBottom: 32 }}>
         <h2 className="page-title">Chào mừng quay trở lại, {userSummary.fullName || userSummary.username}!</h2>
-        <p className="page-subtitle">Bạn có thể quản lý thông tin và xem các kỳ thi của mình tại đây.</p>
+        <p className="page-subtitle">Dưới đây là tóm tắt hoạt động đào tạo của bạn (Thời gian thực).</p>
       </div>
 
-      {/* 4.2.1 Personal Info Summary */}
-      <div className="glass-panel" style={{ padding: 24, background: '#fff', marginBottom: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
+      {/* Real-time Personal Stats Cards */}
+      <div className="flex gap-4 mb-8">
+        {[
+          { label: 'Kỳ thi đã tham gia', value: stats?.totalSessions || 0, color: 'var(--accent-blue)' },
+          { label: 'Đã hoàn thành', value: stats?.completedExams || 0, color: 'var(--success)' },
+          { label: 'Điểm trung bình', value: stats?.avgScore?.toFixed(1) || '0.0', color: 'var(--accent-teal)' },
+        ].map(s => (
+          <div key={s.label} className="glass-panel" style={{ padding: '20px 24px', flex: 1, textAlign: 'center', background: '#fff' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.color }}>{loading ? '...' : s.value}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="glass-panel mb-8" style={{ padding: 24, background: '#fff', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Họ và tên</span>
           <span style={{ fontSize: '1rem', fontWeight: 600 }}>{userSummary.fullName || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Email</span>
-          <span style={{ fontSize: '1rem', fontWeight: 600 }}>{userSummary.email || '—'}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Vai trò</span>
           <span className="badge badge-info" style={{ width: 'fit-content' }}>{userSummary.role}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Trạng thái</span>
-          <span className="badge badge-success" style={{ width: 'fit-content' }}>ACTIVE</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Email</span>
+          <span style={{ fontSize: '1rem', fontWeight: 600 }}>{userSummary.email || '—'}</span>
         </div>
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Kỳ thi đã tham gia</h3>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Lịch thi của tôi</h3>
       </div>
         
-        {/* Filters and Search Bar matching SRS 4.2.5.1 and 4.2.5.2 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
@@ -151,30 +167,11 @@ export default function MemberDashboard() {
             >
               <option value="ACTIVE">Publish (Đang diễn ra)</option>
               <option value="DONE">Ended (Đã kết thúc)</option>
-              <option value="HIDDEN">Hidden (Đã ẩn)</option>
             </select>
-          </div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Ngày bắt đầu:</span>
-              <input type="date" className="form-input" style={{ width: 130 }} value={startDateFrom} onChange={e => setStartDateFrom(e.target.value)} />
-              <span style={{ color: 'var(--text-muted)' }}>-</span>
-              <input type="date" className="form-input" style={{ width: 130 }} value={startDateTo} onChange={e => setStartDateTo(e.target.value)} />
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Ngày kết thúc:</span>
-              <input type="date" className="form-input" style={{ width: 130 }} value={endDateFrom} onChange={e => setEndDateFrom(e.target.value)} />
-              <span style={{ color: 'var(--text-muted)' }}>-</span>
-              <input type="date" className="form-input" style={{ width: 130 }} value={endDateTo} onChange={e => setEndDateTo(e.target.value)} />
-            </div>
-            <button className="btn btn-secondary" style={{ padding: '6px 16px', background: 'var(--bg-primary)', fontSize: '0.85rem' }} onClick={() => {
-              setStartDateFrom(''); setStartDateTo(''); setEndDateFrom(''); setEndDateTo(''); setSearch(''); setStatusFilter('ACTIVE');
-            }}>Xóa filter</button>
           </div>
           {dateError && <div style={{ color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600 }}>{dateError}</div>}
         </div>
 
-        {/* List of Sessions */}
         <div className="glass-panel" style={{ overflow: 'hidden' }}>
           <table className="data-table">
             <thead>
@@ -182,7 +179,7 @@ export default function MemberDashboard() {
                 <th>Tên kỳ thi</th>
                 <th>Ngày bắt đầu</th>
                 <th>Ngày kết thúc</th>
-                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -193,19 +190,21 @@ export default function MemberDashboard() {
               ) : paginated.map(s => (
                 <tr key={s.id}>
                   <td>
-                    <Link href={`/session/${s.code}`} style={{ textDecoration: 'none', color: 'var(--accent-blue)', fontWeight: 500 }}>
-                      {truncateSrsText(s.name)}
-                    </Link>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{truncateSrsText(s.name)}</span>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mã: {s.code}</div>
                   </td>
                   <td>{formatSrsDate(s.startDate)}</td>
                   <td>{formatSrsDate(s.endDate)}</td>
-                  <td>{s.status === 'ACTIVE' ? 'Publish' : 'Done'}</td>
+                  <td>
+                    <Link href={`/session/${s.code}`} className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
+                      Xem chi tiết
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           
-          {/* Pagination 4.2.5 / 7.3.1 */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--glass-border)', alignItems: 'center', gap: 16 }}>
             <button 
               className="btn btn-secondary" 
