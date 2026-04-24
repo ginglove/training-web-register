@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
@@ -5,14 +6,16 @@ import { getUserFromRequest } from '@/lib/auth'
 export async function POST(req: NextRequest) {
   try {
     const user = getUserFromRequest(req)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { sessionId, examPaperId } = await req.json()
+    const body = await req.json()
+    const { sessionId, examPaperId, guestName } = body
 
     if (!sessionId || !examPaperId) {
       return NextResponse.json({ error: 'Missing sessionId or examPaperId' }, { status: 400 })
+    }
+
+    // Check if user is authenticated OR guestName is provided
+    if (!user && !guestName) {
+      return NextResponse.json({ error: 'Unauthorized. Please login or provide a guest name.' }, { status: 401 })
     }
 
     // Check if session exists and is active
@@ -25,26 +28,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already has a submission for this paper in this session
-    const existing = await prisma.submission.findFirst({
-      where: {
-        userId: user.id,
-        sessionId: sessionId,
-        examPaperId: examPaperId,
-      }
-    })
+    // (Only for logged-in users, guests create new submissions each time or we check by name)
+    if (user) {
+      const existing = await prisma.submission.findFirst({
+        where: {
+          userId: user.id,
+          sessionId: sessionId,
+          examPaperId: examPaperId,
+        }
+      })
 
-    if (existing) {
-       // If in progress, return the same ID
-       if (existing.status === 'IN_PROGRESS') {
-         return NextResponse.json({ submissionId: existing.id })
-       }
-       return NextResponse.json({ error: 'Bạn đã nộp bài thi này rồi' }, { status: 400 })
+      if (existing) {
+         if (existing.status === 'IN_PROGRESS') {
+           return NextResponse.json({ submissionId: existing.id })
+         }
+         return NextResponse.json({ error: 'Bạn đã nộp bài thi này rồi' }, { status: 400 })
+      }
     }
 
-    // Create new submission
+    // Create new submission (for User or Guest)
     const submission = await prisma.submission.create({
       data: {
-        userId: user.id,
+        userId: user?.id || null,
+        guestName: !user ? guestName : null,
+        guestCode: !user ? session.code : null,
         sessionId: sessionId,
         examPaperId: examPaperId,
         status: 'IN_PROGRESS',

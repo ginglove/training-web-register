@@ -30,6 +30,7 @@ export default function ViewSessionPage({ params }: { params: { code: string } }
   const [error, setError] = useState('')
   const [showConfirm, setShowConfirm] = useState<{paperId: string, name: string} | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [guestName, setGuestName] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function ViewSessionPage({ params }: { params: { code: string } }
 
     const token = localStorage.getItem('token')
     fetch(`/api/sessions/by-code/${params.code}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     })
       .then(r => r.json())
       .then(data => {
@@ -54,18 +55,28 @@ export default function ViewSessionPage({ params }: { params: { code: string } }
 
   const handleStartTest = async () => {
     if (!showConfirm || !session) return
+    
+    // Validate guest name if not logged in
+    if (!user && !guestName.trim()) {
+      alert('Vui lòng nhập tên của bạn để bắt đầu bài thi.')
+      return
+    }
+
     setLoading(true)
     
     try {
       const token = localStorage.getItem('token')
-      // Use member-friendly endpoint
       const res = await fetch('/api/submissions/start', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ sessionId: session.id, examPaperId: showConfirm.paperId })
+        body: JSON.stringify({ 
+          sessionId: session.id, 
+          examPaperId: showConfirm.paperId,
+          guestName: !user ? guestName.trim() : undefined
+        })
       })
       const data = await res.json()
       if (data.submissionId) {
@@ -81,7 +92,7 @@ export default function ViewSessionPage({ params }: { params: { code: string } }
     }
   }
 
-  if (loading) return <div style={{ padding: 100, textAlign: 'center' }}>Đang tải thông tin...</div>
+  if (loading && !session) return <div style={{ padding: 100, textAlign: 'center' }}>Đang tải thông tin...</div>
   if (error || !session) return (
     <div className="app-container">
       <Sidebar />
@@ -181,8 +192,30 @@ export default function ViewSessionPage({ params }: { params: { code: string } }
           <div className="modal-box" style={{ maxWidth: 450, textAlign: 'center' }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: 8 }}>NDUY_03</div>
             <h3 className="modal-title">Bạn có muốn thực hiện bài thi "{showConfirm.name}" không?</h3>
+            
+            {!user && (
+              <div style={{ marginTop: 20, textAlign: 'left' }}>
+                <label className="form-label" style={{ fontSize: '0.85rem' }}>Nhập họ tên của bạn để bắt đầu:</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                  value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                  style={{ marginTop: 4 }}
+                />
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleStartTest}>Có, bắt đầu</button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1 }} 
+                onClick={handleStartTest}
+                disabled={loading}
+              >
+                {loading ? 'Đang khởi tạo...' : 'Có, bắt đầu'}
+              </button>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowConfirm(null)}>Hủy bỏ</button>
             </div>
           </div>
