@@ -35,7 +35,10 @@ export default function GradingDetailPage() {
   const fetchDetail = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/manage/grading/submission/${submissionId}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/manage/grading/submission/${submissionId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       if (res.ok) {
         const data = await res.json()
         setSubmission(data)
@@ -60,16 +63,19 @@ export default function GradingDetailPage() {
   const handleSubmit = async () => {
     setSaving(true)
     try {
+      const token = localStorage.getItem('token')
       const payload = {
         grades: Object.entries(grades).map(([id, score]) => ({ answerId: id, score }))
       }
       const res = await fetch(`/api/manage/grading/submission/${submissionId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       })
       if (res.ok) {
-        // NDUY_13 Success
         router.push(`/manage/grading/${sessionId}`)
       }
     } catch (err) {
@@ -91,7 +97,6 @@ export default function GradingDetailPage() {
     <div style={{ maxWidth: 900, margin: '0 auto', width: '100%' }}>
       
       {phase === 'intro' ? (
-          /* 4.2.6.3 Intro Screen */
           <div className="glass-panel" style={{ padding: 40, background: 'var(--bg-secondary)' }}>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 32, textAlign: 'center' }}>
               Thông tin chi tiết của bài thi
@@ -104,7 +109,7 @@ export default function GradingDetailPage() {
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Tên kỳ thi</label>
-                <span style={{ fontWeight: 600 }}>{submission.examPaper.name}</span>
+                <span style={{ fontWeight: 600 }}>{submission.examPaper?.name}</span>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Tên thí sinh</label>
@@ -112,15 +117,15 @@ export default function GradingDetailPage() {
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Chủ đề thi</label>
-                <span style={{ fontWeight: 600 }}>General</span>
+                <span style={{ fontWeight: 600 }}>{submission.examPaper?.topic || 'General'}</span>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Số câu hỏi tự luận</label>
-                <span style={{ fontWeight: 600 }}>{submission.answers.length}</span>
+                <span style={{ fontWeight: 600 }}>{submission.answers?.length || 0}</span>
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Tổng điểm tự luận</label>
-                <span style={{ fontWeight: 600 }}>{submission.answers.reduce((s: any, a: any) => s + a.maxScore, 0)}</span>
+                <span style={{ fontWeight: 600 }}>{submission.answers?.reduce((s: any, a: any) => s + a.maxScore, 0) || 0}</span>
               </div>
             </div>
 
@@ -131,7 +136,6 @@ export default function GradingDetailPage() {
             </div>
           </div>
         ) : (
-          /* 4.2.6.4 Grading Page */
           <div>
             <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
@@ -156,7 +160,6 @@ export default function GradingDetailPage() {
                 </p>
               </div>
 
-              {/* SeekBar for Grading */}
               <div style={{ padding: '0 20px' }}>
                 <label style={{ fontWeight: 600, display: 'block', marginBottom: 16 }}>Chấm điểm: <span style={{ color: 'var(--accent-blue)', fontSize: '1.2rem' }}>{formatSrsScore(grades[currentAns.id] || 0)}</span> / {currentAns.maxScore}</label>
                 <input 
@@ -199,7 +202,6 @@ export default function GradingDetailPage() {
           </div>
         )}
 
-        {/* NDUY_13 Confirm Popup */}
         {showConfirm && (
           <div className="glass-panel" style={{ 
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, 
