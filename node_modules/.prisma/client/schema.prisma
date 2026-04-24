@@ -1,0 +1,277 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================
+// USERS & AUTH
+// ===========================
+
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique @db.VarChar(15)
+  email        String     @unique @db.VarChar(100)
+  passwordHash String     @map("password_hash")
+  fullName     String?    @map("full_name") @db.VarChar(100)
+  phone        String?    @db.VarChar(15)
+  idCard       String?    @map("id_card") @db.VarChar(20)
+  role         Role       @default(MEMBER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  createdExamPapers   ExamPaper[]   @relation("ExamPaperCreator")
+  createdSessions     ExamSession[] @relation("SessionCreator")
+  participantSessions SessionParticipant[] @relation("ParticipantUser")
+  gradingAssignments  SessionParticipant[] @relation("AssignedGrader")
+  submissions         Submission[]
+  gradedAnswers       SubmissionAnswer[] @relation("GraderUser")
+  createdQuestions    Question[]    @relation("QuestionCreator")
+  createdGroups       UserGroup[]   @relation("GroupCreator")
+  groups              GroupMember[]
+
+  @@map("users")
+}
+
+model UserGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdById String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  createdBy User          @relation("GroupCreator", fields: [createdById], references: [id])
+  members   GroupMember[]
+
+  @@map("user_groups")
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String   @map("group_id")
+  userId    String   @map("user_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  group UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+// ===========================
+// QUESTION BANK
+// ===========================
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  ESSAY
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model QuestionCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique @db.VarChar(100)
+  description String?    @db.Text
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  questions Question[]
+
+  @@map("question_categories")
+}
+
+model Question {
+  id         String           @id @default(cuid())
+  categoryId String           @map("category_id")
+  content    String           @db.Text
+  type       QuestionType
+  difficulty Difficulty       @default(MEDIUM)
+  createdById String          @map("created_by")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  category   QuestionCategory @relation(fields: [categoryId], references: [id])
+  createdBy  User             @relation("QuestionCreator", fields: [createdById], references: [id])
+  options    QuestionOption[]
+  examItems  ExamPaperQuestion[]
+  answers    SubmissionAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String   @map("question_id")
+  content    String   @db.Text
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  order      Int      @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+// ===========================
+// EXAM PAPERS (Đề thi)
+// ===========================
+
+model ExamPaper {
+  id              String   @id @default(cuid())
+  name            String   @db.VarChar(200)
+  topic           String   @db.VarChar(100)
+  durationMinutes Int      @map("duration_minutes")
+  totalScore      Float    @map("total_score") @default(10)
+  createdById     String   @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy    User                @relation("ExamPaperCreator", fields: [createdById], references: [id])
+  questions    ExamPaperQuestion[]
+  sessionItems SessionExamPaper[]
+  submissions  Submission[]
+
+  @@map("exam_papers")
+}
+
+model ExamPaperQuestion {
+  id          String @id @default(cuid())
+  examPaperId String @map("exam_paper_id")
+  questionId  String @map("question_id")
+  score       Float  @default(1)
+  order       Int    @default(0)
+
+  examPaper ExamPaper @relation(fields: [examPaperId], references: [id], onDelete: Cascade)
+  question  Question  @relation(fields: [questionId], references: [id])
+
+  @@unique([examPaperId, questionId])
+  @@map("exam_paper_questions")
+}
+
+// ===========================
+// EXAM SESSIONS (Kỳ thi)
+// ===========================
+
+enum SessionStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+model ExamSession {
+  id          String        @id @default(cuid())
+  name        String        @db.VarChar(200)
+  code        String        @unique @db.VarChar(20)
+  status      SessionStatus @default(UPCOMING)
+  startDate   DateTime      @map("start_date")
+  endDate     DateTime      @map("end_date")
+  createdById String        @map("created_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  createdBy    User                 @relation("SessionCreator", fields: [createdById], references: [id])
+  examPapers   SessionExamPaper[]
+  participants SessionParticipant[]
+  submissions  Submission[]
+
+  @@map("exam_sessions")
+}
+
+model SessionExamPaper {
+  id        String @id @default(cuid())
+  sessionId String @map("session_id")
+  paperId   String @map("exam_paper_id")
+
+  session ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  paper   ExamPaper   @relation(fields: [paperId], references: [id])
+
+  @@unique([sessionId, paperId])
+  @@map("session_exam_papers")
+}
+
+model SessionParticipant {
+  id               String  @id @default(cuid())
+  sessionId        String  @map("session_id")
+  userId           String  @map("user_id")
+  assignedGraderId String? @map("assigned_grader_id")
+
+  session        ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User        @relation("ParticipantUser", fields: [userId], references: [id])
+  assignedGrader User?       @relation("AssignedGrader", fields: [assignedGraderId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@map("session_participants")
+}
+
+// ===========================
+// SUBMISSIONS (Bài thi)
+// ===========================
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  sessionId   String?          @map("session_id")
+  examPaperId String           @map("exam_paper_id")
+  userId      String?          @map("user_id")
+  guestCode   String?          @map("guest_code")
+  guestName   String?          @map("guest_name")
+  status      SubmissionStatus @default(IN_PROGRESS)
+  totalScore  Float?           @map("total_score")
+  startedAt   DateTime         @default(now()) @map("started_at")
+  submittedAt DateTime?        @map("submitted_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  session   ExamSession?      @relation(fields: [sessionId], references: [id])
+  examPaper ExamPaper         @relation(fields: [examPaperId], references: [id])
+  user      User?             @relation(fields: [userId], references: [id])
+  answers   SubmissionAnswer[]
+
+  @@map("submissions")
+}
+
+model SubmissionAnswer {
+  id               String   @id @default(cuid())
+  submissionId     String   @map("submission_id")
+  questionId       String   @map("question_id")
+  answerText       String?  @map("answer_text") @db.Text
+  selectedOptionIds String[] @map("selected_option_ids")
+  score            Float?
+  graderId         String?  @map("grader_id")
+  gradedAt         DateTime? @map("graded_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id])
+  grader     User?      @relation("GraderUser", fields: [graderId], references: [id])
+
+  @@unique([submissionId, questionId])
+  @@map("submission_answers")
+}

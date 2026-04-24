@@ -1,18 +1,36 @@
 {
-  "name": "software-testing-teaching-system",
+  "name": "training-system",
   "version": "1.0.0",
+  "description": "Corporate Training & Examination System",
   "private": true,
-  "type": "module",
   "scripts": {
-    "start:gateway": "node backend/gateway/server.js",
-    "start:auth": "node backend/services/auth/server.js",
-    "start:learning": "node backend/services/learning/server.js",
-    "start:assessment": "node backend/services/assessment/server.js",
-    "start:admin": "node backend/services/admin/server.js",
-    "start:all": "node backend/dev-runner.js",
-    "check": "node --check backend/dev-runner.js && node --check backend/gateway/server.js && node --check backend/services/auth/server.js && node --check backend/services/learning/server.js && node --check backend/services/assessment/server.js && node --check backend/services/admin/server.js && node --check frontend/app.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
-    "pg": "^8.20.0"
+    "@prisma/client": "^5.13.0",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "prisma": "^5.13.0",
+    "typescript": "^5.4.5"
   }
 }
