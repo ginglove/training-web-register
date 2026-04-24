@@ -139,12 +139,19 @@ model QuestionOption {
 // EXAM PAPERS (Đề thi)
 // ===========================
 
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model ExamPaper {
   id              String   @id @default(cuid())
   name            String   @db.VarChar(200)
   topic           String   @db.VarChar(100)
   durationMinutes Int      @map("duration_minutes")
   totalScore      Float    @map("total_score") @default(10)
+  status          ExamStatus @default(DRAFT)
   createdById     String   @map("created_by")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")

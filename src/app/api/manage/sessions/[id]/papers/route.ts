@@ -18,9 +18,10 @@ export async function POST(
     const existing = await prisma.sessionExamPaper.findFirst({
       where: {
         sessionId: params.id,
-        examPaperId: paperId
+        paperId: paperId
       }
     })
+
 
     if (existing) {
       return NextResponse.json({ error: 'Đề thi này đã có trong phiên thi' }, { status: 400 })
@@ -29,9 +30,10 @@ export async function POST(
     const item = await prisma.sessionExamPaper.create({
       data: {
         sessionId: params.id,
-        examPaperId: paperId
+        paperId: paperId
       }
     })
+
 
     return NextResponse.json(item)
   } catch (error) {

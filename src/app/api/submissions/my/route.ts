@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
       where: { userId: user.id },
       include: {
         examPaper: { select: { name: true } },
-        examSession: { select: { name: true } }
+        session: { select: { name: true } }
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     })
 
     return NextResponse.json(submissions)

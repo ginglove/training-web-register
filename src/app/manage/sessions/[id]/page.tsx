@@ -53,7 +53,7 @@ export default function SessionDetailPage() {
 
   const handleAddPaper = async (paperId: string) => {
     // Check if paper already exists in session to prevent UI errors
-    if (session.papers?.some((p: any) => p.examPaperId === paperId)) {
+    if (session.examPapers?.some((p: any) => p.paperId === paperId)) {
       alert('Đề thi này đã có trong phiên thi này rồi.')
       return
     }
@@ -118,13 +118,13 @@ export default function SessionDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {session.papers?.length === 0 ? (
+            {!session.examPapers || session.examPapers.length === 0 ? (
               <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Chưa có đề thi nào</td></tr>
-            ) : session.papers?.map((p: any) => (
+            ) : session.examPapers.map((p: any) => (
               <tr key={p.id}>
-                <td style={{ fontWeight: 600 }}>{p.examPaper.name}</td>
-                <td>{p.examPaper.durationMinutes} phút</td>
-                <td>{p.examPaper._count?.questions || 0} câu</td>
+                <td style={{ fontWeight: 600 }}>{p.paper.name}</td>
+                <td>{p.paper.durationMinutes} phút</td>
+                <td>{p.paper._count?.questions || 0} câu</td>
                 <td>
                   <button className="btn btn-danger btn-sm">Gỡ bỏ</button>
                 </td>
@@ -149,7 +149,7 @@ export default function SessionDetailPage() {
                 </thead>
                 <tbody>
                   {bank.map(b => {
-                    const isAdded = session.papers?.some((p: any) => p.examPaperId === b.id)
+                    const isAdded = session.examPapers?.some((p: any) => p.paperId === b.id)
                     return (
                       <tr key={b.id}>
                         <td style={{ fontWeight: 600 }}>{b.name}</td>

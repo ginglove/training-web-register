@@ -10,17 +10,16 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // 'PENDING' or 'GRADED'
     const search = searchParams.get('search') || ''
 
-    // For simplicity, we fetch sessions where the user is an assigned grader
-    // and the session status is DONE (as per SRS 4.2.6.1)
-    const sessions = await prisma.session.findMany({
+    // Fetch sessions where the user is an assigned grader
+    // and the session status is ENDED
+    const sessions = await prisma.examSession.findMany({
       where: {
-        status: 'DONE',
-        assignedGraders: {
+        status: 'ENDED',
+        participants: {
           some: {
-            id: auth.id
+            assignedGraderId: auth.id
           }
         },
         name: {
@@ -29,10 +28,9 @@ export async function GET(request: Request) {
         }
       },
       include: {
-        assignedGraders: {
+        createdBy: {
           select: {
-            fullName: true,
-            username: true
+            fullName: true
           }
         }
       }
@@ -42,8 +40,8 @@ export async function GET(request: Request) {
     const result = sessions.map(s => ({
       id: s.id,
       name: s.name,
-      assignedBy: 'System', // Placeholder as schema doesn't track "who" assigned
-      status: 'Chưa chấm xong' // Logic for graded vs pending would go here
+      assignedBy: s.createdBy?.fullName || 'Manager',
+      status: 'Chưa chấm xong'
     }))
 
     return NextResponse.json(result)

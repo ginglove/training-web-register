@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev'
@@ -11,8 +11,8 @@ export interface DecodedToken {
   exp: number
 }
 
-export function signToken(payload: object, expiresIn = '1d') {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn })
+export function signToken(payload: object, expiresIn: string | number = '1d') {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn } as SignOptions)
 }
 
 export function verifyToken(token: string): DecodedToken | null {
