@@ -27,7 +27,10 @@ export default function SessionGradingPage() {
   const fetchSubmissions = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/manage/grading/${sessionId}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/manage/grading/${sessionId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       if (res.ok) {
         const data = await res.json()
         setSubmissions(data)

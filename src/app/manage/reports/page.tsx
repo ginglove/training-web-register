@@ -96,7 +96,9 @@ export default function ReportsPage() {
                 <td>{r.gradedCount} / {r.totalParticipants}</td>
                 <td style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>{r.averageScore}</td>
                 <td>
-                  <button className="btn btn-secondary btn-sm">Xem chi tiết</button>
+                  <Link href={`/manage/grading/${r.id}`} className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
+                    Xem chi tiết
+                  </Link>
                 </td>
               </tr>
             ))}
